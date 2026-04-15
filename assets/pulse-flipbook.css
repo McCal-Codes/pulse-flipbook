@@ -95,6 +95,32 @@
   background: rgba(250, 249, 247, 0.95);
 }
 
+.pulse-flipbook--empty .pulse-flipbook__header {
+  border-bottom: 0;
+}
+
+.pulse-flipbook__empty-state {
+  padding: 1rem 1rem 1.2rem;
+  border-top: 1px solid rgba(11, 20, 14, 0.08);
+  color: #5b625d;
+  text-align: center;
+}
+
+.pulse-flipbook__empty-state p {
+  margin: 0.35rem 0;
+}
+
+.pulse-flipbook__empty-state a {
+  color: #121b13;
+}
+
+.pulse-flipbook-editor-placeholder {
+  border: 1px dashed rgba(18, 27, 19, 0.28);
+  border-radius: 10px;
+  background: rgba(244, 241, 236, 0.65);
+  padding: 1rem;
+}
+
 @media (max-width: 782px) {
   .pulse-flipbook__header {
     flex-direction: column;

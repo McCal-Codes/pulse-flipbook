@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.6 - 2026-04-15
+
+- Added a native dynamic Gutenberg block `pulse/issue-flipbook` for issue pages and templates.
+- Added an editor placeholder and block controls for viewer height and download visibility.
+- Added a styled empty-state fallback when an Issue has no PDF yet, instead of blank output.
+- Updated auto-inject behavior to avoid duplicate rendering when block/template placement is present.
+
 ## 0.1.5 - 2026-04-15
 
 - Improved Issue PDF picker behavior for wp-admin by aligning validation across Media modal selection and server-side attachment checks.

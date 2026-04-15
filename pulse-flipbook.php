@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Pulse Flipbook
  * Description: Opinionated issue flipbook viewer for Pulse Magazine.
- * Version: 0.1.5
+ * Version: 0.1.6
  * Requires at least: 6.5
  * Requires PHP: 8.1
  * Author: Pulse Magazine
@@ -24,6 +24,14 @@ function pulse_flipbook_defaults(): array
         'auto_render_single_issue' => 1,
         'viewer_height' => 760,
         'show_download_button' => 1,
+    ];
+}
+
+function pulse_flipbook_block_defaults(): array
+{
+    return [
+        'show_download_button' => (int) pulse_flipbook_setting('show_download_button', 1) === 1,
+        'viewer_height' => (int) pulse_flipbook_setting('viewer_height', 760),
     ];
 }
 
@@ -285,7 +293,7 @@ function pulse_flipbook_admin_enqueue_scripts(string $hook): void
         'pulse-flipbook-admin',
         PULSE_FLIPBOOK_URL . 'assets/pulse-flipbook-admin.js',
         ['jquery'],
-        '0.1.5',
+        '0.1.6',
         true
     );
     wp_localize_script('pulse-flipbook-admin', 'pulseFlipbookAdmin', [
@@ -304,20 +312,60 @@ function pulse_flipbook_register_assets(): void
         'pulse-flipbook-style',
         PULSE_FLIPBOOK_URL . 'assets/pulse-flipbook.css',
         [],
-        '0.1.5'
+        '0.1.6'
     );
 
     wp_register_script(
         'pulse-flipbook-script',
         PULSE_FLIPBOOK_URL . 'assets/pulse-flipbook.js',
         [],
-        '0.1.5',
+        '0.1.6',
+        true
+    );
+
+    wp_register_script(
+        'pulse-flipbook-block-editor',
+        PULSE_FLIPBOOK_URL . 'assets/pulse-flipbook-block.js',
+        ['wp-blocks', 'wp-element', 'wp-i18n', 'wp-block-editor', 'wp-components'],
+        '0.1.6',
         true
     );
 }
 add_action('wp_enqueue_scripts', 'pulse_flipbook_register_assets');
+add_action('init', 'pulse_flipbook_register_assets');
 
-function pulse_flipbook_render_markup(int $issue_id, bool $enqueue = true): string
+function pulse_flipbook_render_empty_state(int $issue_id = 0): string
+{
+    $issue_title = $issue_id > 0 ? get_the_title($issue_id) : '';
+    $title = $issue_title !== '' ? $issue_title : __('This issue', 'pulse-flipbook');
+    $manage_url = $issue_id > 0 ? get_edit_post_link($issue_id, '') : '';
+
+    ob_start();
+    ?>
+    <section class="pulse-flipbook pulse-flipbook--empty">
+        <header class="pulse-flipbook__header">
+            <div>
+                <p class="pulse-flipbook__kicker"><?php esc_html_e('Issue Reader', 'pulse-flipbook'); ?></p>
+                <h2 class="pulse-flipbook__title"><?php echo esc_html($title); ?></h2>
+            </div>
+        </header>
+        <div class="pulse-flipbook__empty-state">
+            <p><?php esc_html_e('Issue PDF coming soon.', 'pulse-flipbook'); ?></p>
+            <?php if (is_user_logged_in() && current_user_can('edit_post', $issue_id) && is_string($manage_url) && $manage_url !== '') : ?>
+                <p><a href="<?php echo esc_url($manage_url); ?>"><?php esc_html_e('Add or select a PDF for this issue', 'pulse-flipbook'); ?></a></p>
+            <?php endif; ?>
+        </div>
+    </section>
+    <?php
+    return (string) ob_get_clean();
+}
+
+function pulse_flipbook_render_markup(
+    int $issue_id,
+    bool $enqueue = true,
+    ?int $viewer_height_override = null,
+    ?bool $show_download_override = null
+): string
 {
     $pdf_url = pulse_flipbook_pdf_url_for_issue($issue_id);
     if ($pdf_url === '') {
@@ -329,8 +377,20 @@ function pulse_flipbook_render_markup(int $issue_id, bool $enqueue = true): stri
         wp_enqueue_script('pulse-flipbook-script');
     }
 
-    $height = (int)pulse_flipbook_setting('viewer_height', 760);
-    $show_download = (int)pulse_flipbook_setting('show_download_button', 1) === 1 ? '1' : '0';
+    $height = $viewer_height_override !== null
+        ? $viewer_height_override
+        : (int)pulse_flipbook_setting('viewer_height', 760);
+    if ($height < 480) {
+        $height = 480;
+    }
+    if ($height > 1200) {
+        $height = 1200;
+    }
+
+    $show_download_enabled = $show_download_override !== null
+        ? $show_download_override
+        : ((int)pulse_flipbook_setting('show_download_button', 1) === 1);
+    $show_download = $show_download_enabled ? '1' : '0';
     $title = get_the_title($issue_id);
 
     ob_start();
@@ -348,7 +408,7 @@ function pulse_flipbook_render_markup(int $issue_id, bool $enqueue = true): stri
                 <button type="button" class="pulse-flipbook__btn" data-action="zoom-out" aria-label="<?php esc_attr_e('Zoom out', 'pulse-flipbook'); ?>">-</button>
                 <button type="button" class="pulse-flipbook__btn" data-action="zoom-in" aria-label="<?php esc_attr_e('Zoom in', 'pulse-flipbook'); ?>">+</button>
                 <button type="button" class="pulse-flipbook__btn" data-action="fullscreen" aria-label="<?php esc_attr_e('Fullscreen', 'pulse-flipbook'); ?>">&#9974;</button>
-                <?php if ((int)$show_download === 1) : ?>
+                <?php if ($show_download_enabled) : ?>
                     <a class="pulse-flipbook__btn pulse-flipbook__btn--link" href="<?php echo esc_url($pdf_url); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Download PDF', 'pulse-flipbook'); ?></a>
                 <?php endif; ?>
             </div>
@@ -365,6 +425,70 @@ function pulse_flipbook_render_markup(int $issue_id, bool $enqueue = true): stri
 
     return (string)ob_get_clean();
 }
+
+function pulse_flipbook_render_block(array $attributes = [], string $content = '', ?\WP_Block $block = null): string
+{
+    $context_post_id = $block instanceof \WP_Block ? (int)($block->context['postId'] ?? 0) : 0;
+    $issue_id = absint((int)($attributes['issueId'] ?? $context_post_id));
+
+    if ($issue_id <= 0 && is_singular('issue')) {
+        $issue_id = absint((int) get_the_ID());
+    }
+    if ($issue_id <= 0 || get_post_type($issue_id) !== 'issue') {
+        return '';
+    }
+
+    $viewer_height = absint((int)($attributes['viewerHeight'] ?? pulse_flipbook_setting('viewer_height', 760)));
+    if ($viewer_height < 480) {
+        $viewer_height = 480;
+    }
+    if ($viewer_height > 1200) {
+        $viewer_height = 1200;
+    }
+
+    $show_download = !empty($attributes['showDownload']);
+    $markup = pulse_flipbook_render_markup($issue_id, true, $viewer_height, $show_download);
+    if ($markup === '') {
+        $markup = pulse_flipbook_render_empty_state($issue_id);
+        wp_enqueue_style('pulse-flipbook-style');
+    }
+
+    return $markup;
+}
+
+function pulse_flipbook_register_block(): void
+{
+    register_block_type('pulse/issue-flipbook', [
+        'api_version' => 3,
+        'title' => __('Issue Flipbook', 'pulse-flipbook'),
+        'description' => __('Render the issue PDF reader from Pulse Flipbook settings/meta.', 'pulse-flipbook'),
+        'category' => 'widgets',
+        'icon' => 'book',
+        'keywords' => ['pulse', 'flipbook', 'issue', 'pdf'],
+        'supports' => [
+            'html' => false,
+        ],
+        'attributes' => [
+            'issueId' => [
+                'type' => 'number',
+                'default' => 0,
+            ],
+            'viewerHeight' => [
+                'type' => 'number',
+                'default' => (int) pulse_flipbook_setting('viewer_height', 760),
+            ],
+            'showDownload' => [
+                'type' => 'boolean',
+                'default' => (int) pulse_flipbook_setting('show_download_button', 1) === 1,
+            ],
+        ],
+        'uses_context' => ['postId', 'postType'],
+        'editor_script' => 'pulse-flipbook-block-editor',
+        'style' => 'pulse-flipbook-style',
+        'render_callback' => 'pulse_flipbook_render_block',
+    ]);
+}
+add_action('init', 'pulse_flipbook_register_block');
 
 function pulse_flipbook_shortcode(array $atts): string
 {
@@ -392,15 +516,26 @@ function pulse_flipbook_inject_single_issue(string $content): string
     if ((int)pulse_flipbook_setting('auto_render_single_issue', 1) !== 1) {
         return $content;
     }
+    if (has_block('pulse/issue-flipbook', $content) || has_shortcode($content, 'pulse_flipbook')) {
+        return $content;
+    }
 
     $issue_id = get_the_ID();
     if (!$issue_id || get_post_type($issue_id) !== 'issue') {
         return $content;
     }
+    $theme_template = get_theme_file_path('templates/single-issue.html');
+    if (is_string($theme_template) && is_readable($theme_template)) {
+        $template_contents = file_get_contents($theme_template);
+        if (is_string($template_contents) && str_contains($template_contents, 'wp:pulse/issue-flipbook')) {
+            return $content;
+        }
+    }
 
     $flipbook = pulse_flipbook_render_markup($issue_id, true);
     if ($flipbook === '') {
-        return $content;
+        $flipbook = pulse_flipbook_render_empty_state((int) $issue_id);
+        wp_enqueue_style('pulse-flipbook-style');
     }
 
     return $content . $flipbook;
