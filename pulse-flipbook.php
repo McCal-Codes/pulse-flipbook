@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Pulse Flipbook
  * Description: Opinionated issue flipbook viewer for Pulse Magazine.
- * Version: 0.1.3
+ * Version: 0.1.4
  * Requires at least: 6.5
  * Requires PHP: 8.1
  * Author: Pulse Magazine
@@ -165,8 +165,13 @@ function pulse_flipbook_is_valid_pdf_attachment(int $attachment_id): bool
     if (!$post || $post->post_type !== 'attachment') {
         return false;
     }
-    $mime = (string)get_post_mime_type($attachment_id);
-    return $mime === 'application/pdf';
+    $mime = strtolower((string)get_post_mime_type($attachment_id));
+    if ($mime === 'application/pdf' || str_ends_with($mime, '/pdf') || str_contains($mime, 'pdf')) {
+        return true;
+    }
+
+    $file = (string)get_attached_file($attachment_id);
+    return $file !== '' && str_ends_with(strtolower($file), '.pdf');
 }
 
 /**
@@ -280,7 +285,7 @@ function pulse_flipbook_admin_enqueue_scripts(string $hook): void
         'pulse-flipbook-admin',
         PULSE_FLIPBOOK_URL . 'assets/pulse-flipbook-admin.js',
         ['jquery'],
-        '0.1.1',
+        '0.1.4',
         true
     );
     wp_localize_script('pulse-flipbook-admin', 'pulseFlipbookAdmin', [
@@ -288,6 +293,7 @@ function pulse_flipbook_admin_enqueue_scripts(string $hook): void
         'i18nButton' => __('Use this PDF', 'pulse-flipbook'),
         'i18nNotPdf' => __('Please choose a PDF file.', 'pulse-flipbook'),
         'i18nNone' => __('No PDF selected.', 'pulse-flipbook'),
+        'i18nBadUploadPerms' => __('Your account cannot upload files. Ask an administrator to grant media upload permissions.', 'pulse-flipbook'),
     ]);
 }
 add_action('admin_enqueue_scripts', 'pulse_flipbook_admin_enqueue_scripts');
@@ -298,14 +304,14 @@ function pulse_flipbook_register_assets(): void
         'pulse-flipbook-style',
         PULSE_FLIPBOOK_URL . 'assets/pulse-flipbook.css',
         [],
-        '0.1.3'
+        '0.1.4'
     );
 
     wp_register_script(
         'pulse-flipbook-script',
         PULSE_FLIPBOOK_URL . 'assets/pulse-flipbook.js',
         [],
-        '0.1.3',
+        '0.1.4',
         true
     );
 }

@@ -26,7 +26,13 @@
           return;
         }
         var mime = attachment.mime || "";
-        if (mime !== "application/pdf") {
+        var filename = (attachment.filename || attachment.title || "").toLowerCase();
+        var looksLikePdf =
+          mime === "application/pdf" ||
+          mime.endsWith("/pdf") ||
+          mime.indexOf("pdf") !== -1 ||
+          filename.endsWith(".pdf");
+        if (!looksLikePdf) {
           window.alert(pulseFlipbookAdmin.i18nNotPdf);
           return;
         }
@@ -42,5 +48,12 @@
       $input.val("0");
       $label.text(pulseFlipbookAdmin.i18nNone);
     });
+
+    if (typeof wp !== "undefined" && wp.media && wp.media.view && wp.media.view.settings && wp.media.view.settings.post) {
+      var canUpload = !!wp.media.view.settings.post.nonce;
+      if (!canUpload) {
+        $btn.after('<p style="margin-top:8px;color:#b32d2e;">' + pulseFlipbookAdmin.i18nBadUploadPerms + "</p>");
+      }
+    }
   });
 })(jQuery);
