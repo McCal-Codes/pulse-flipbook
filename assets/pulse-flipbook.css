@@ -1,0 +1,107 @@
+.pulse-flipbook {
+  border: 1px solid rgba(11, 20, 14, 0.12);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 40px -24px rgba(11, 20, 14, 0.28);
+  margin-top: 1.5rem;
+}
+
+.pulse-flipbook__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(11, 20, 14, 0.08);
+}
+
+.pulse-flipbook__kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  color: #5b625d;
+}
+
+.pulse-flipbook__title {
+  margin: 0.2rem 0 0;
+  font-size: 1.1rem;
+}
+
+.pulse-flipbook__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.pulse-flipbook__btn {
+  border: 1px solid rgba(18, 27, 19, 0.2);
+  background: #fff;
+  color: #121b13;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  line-height: 1;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.7rem;
+  cursor: pointer;
+}
+
+.pulse-flipbook__btn:hover {
+  background: #121b13;
+  color: #fff;
+}
+
+.pulse-flipbook__btn--link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.pulse-flipbook__status {
+  font-size: 0.78rem;
+  color: #5b625d;
+  min-width: 4rem;
+  text-align: center;
+}
+
+.pulse-flipbook__viewport {
+  position: relative;
+  background: linear-gradient(180deg, #faf9f7 0%, #f4f1ec 70%, #edeae5 100%);
+  border-radius: 0 0 14px 14px;
+  overflow: hidden;
+}
+
+.pulse-flipbook__canvas {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pulse-flipbook__loading,
+.pulse-flipbook__error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1rem;
+  color: #5b625d;
+  background: rgba(250, 249, 247, 0.95);
+}
+
+@media (max-width: 782px) {
+  .pulse-flipbook__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pulse-flipbook__controls {
+    justify-content: flex-start;
+  }
+}
