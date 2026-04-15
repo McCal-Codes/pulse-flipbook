@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Pulse Flipbook
  * Description: Opinionated issue flipbook viewer for Pulse Magazine.
- * Version: 0.1.2
+ * Version: 0.1.3
  * Requires at least: 6.5
  * Requires PHP: 8.1
  * Author: Pulse Magazine
@@ -298,14 +298,14 @@ function pulse_flipbook_register_assets(): void
         'pulse-flipbook-style',
         PULSE_FLIPBOOK_URL . 'assets/pulse-flipbook.css',
         [],
-        '0.1.2'
+        '0.1.3'
     );
 
     wp_register_script(
         'pulse-flipbook-script',
         PULSE_FLIPBOOK_URL . 'assets/pulse-flipbook.js',
         [],
-        '0.1.2',
+        '0.1.3',
         true
     );
 }
